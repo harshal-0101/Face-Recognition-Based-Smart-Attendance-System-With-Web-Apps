@@ -1,0 +1,13 @@
+Flask
+pymongo
+opencv-python
+face_recognition
+pyttsx3
+numpy
+pandas
+Werkzeug
+cmake
+setuptools
+wheel
+dlib
+python-dotenv

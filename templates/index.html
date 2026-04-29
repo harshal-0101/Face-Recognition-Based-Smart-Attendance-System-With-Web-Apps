@@ -1,0 +1,28 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<h1 class="page-title">Dashboard</h1>
+
+<div class="dashboard-grid">
+    <div class="glass-panel text-center" style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 15px; padding: 3rem;">
+        <i class="fa-solid fa-user-plus" style="font-size: 3rem; color: var(--accent);"></i>
+        <h3>Register New User</h3>
+        <p style="color: var(--text-secondary); text-align: center;">Add a new employee or student to the system with their facial data.</p>
+        <a href="{{ url_for('register_page') }}" class="btn btn-primary" style="margin-top: 10px;">Go to Registration</a>
+    </div>
+
+    <div class="glass-panel text-center" style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 15px; padding: 3rem;">
+        <i class="fa-solid fa-camera" style="font-size: 3rem; color: var(--success);"></i>
+        <h3>Mark Attendance</h3>
+        <p style="color: var(--text-secondary); text-align: center;">Start the AI camera to automatically log attendance in real-time.</p>
+        <a href="{{ url_for('attendance_page') }}" class="btn btn-success" style="margin-top: 10px;">Start Camera</a>
+    </div>
+
+    <div class="glass-panel text-center" style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 15px; padding: 3rem;">
+        <i class="fa-solid fa-file-export" style="font-size: 3rem; color: #a855f7;"></i>
+        <h3>Export Records</h3>
+        <p style="color: var(--text-secondary); text-align: center;">Download the complete attendance logs as a CSV file.</p>
+        <a href="{{ url_for('export_csv') }}" class="btn" style="background-color: #a855f7; color: white; margin-top: 10px;">Download CSV</a>
+    </div>
+</div>
+{% endblock %}

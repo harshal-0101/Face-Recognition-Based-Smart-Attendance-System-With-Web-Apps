@@ -1,0 +1,136 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<h1 class="page-title">Register New User</h1>
+
+<div class="glass-panel" style="max-width: 900px; margin: 0 auto; display: flex; gap: 2rem; flex-wrap: wrap;">
+    
+    <div style="flex: 1; min-width: 300px;">
+        <h3 style="margin-bottom: 1.5rem;">User Details</h3>
+        <div class="form-group">
+            <label>ID Number</label>
+            <input type="text" id="userId" class="form-control" placeholder="e.g. EMP1024" required>
+        </div>
+        <div class="form-group">
+            <label>Full Name</label>
+            <input type="text" id="userName" class="form-control" placeholder="e.g. John Doe" required>
+        </div>
+        <div class="form-group">
+            <label>Department / Class</label>
+            <input type="text" id="userDept" class="form-control" placeholder="e.g. Engineering" required>
+        </div>
+        <div id="statusMessage" style="margin-top: 1rem; font-weight: 500;"></div>
+    </div>
+
+    <div style="flex: 1; min-width: 300px;">
+        <h3 style="margin-bottom: 1.5rem;">Facial Data</h3>
+        <div class="camera-container" style="max-width: 100%; aspect-ratio: 1; border-radius: 8px;">
+            <video id="webcam" autoplay playsinline></video>
+            <canvas id="canvas" style="display:none;"></canvas>
+            <div id="overlay"></div>
+        </div>
+        <p style="color: var(--text-secondary); font-size: 0.9rem; margin-top: 10px; text-align: center;">
+            Position your face inside the circle.
+        </p>
+        <button id="captureBtn" class="btn btn-primary" style="width: 100%; margin-top: 1rem; justify-content: center;">
+            <i class="fa-solid fa-camera"></i> Capture & Register
+        </button>
+    </div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    const video = document.getElementById('webcam');
+    const canvas = document.getElementById('canvas');
+    const captureBtn = document.getElementById('captureBtn');
+    const statusMsg = document.getElementById('statusMessage');
+
+    // Disable capture until the camera stream is ready
+    captureBtn.disabled = true;
+
+    // Access webcam
+    navigator.mediaDevices.getUserMedia({ video: true })
+        .then(stream => {
+            video.srcObject = stream;
+        })
+        .catch(err => {
+            console.error("Camera access denied or error:", err);
+            statusMsg.innerHTML = `<span style="color: var(--danger)">Please enable camera permissions.</span>`;
+        });
+
+    // Re-enable the button only once the video has actual dimensions
+    video.addEventListener('loadedmetadata', () => {
+        captureBtn.disabled = false;
+    });
+
+    captureBtn.addEventListener('click', () => {
+        const userId = document.getElementById('userId').value.trim();
+        const userName = document.getElementById('userName').value.trim();
+        const userDept = document.getElementById('userDept').value.trim();
+
+        if(!userId || !userName || !userDept) {
+            statusMsg.innerHTML = `<span style="color: var(--danger)">All fields are required!</span>`;
+            return;
+        }
+
+        // Guard: make sure the video feed has real dimensions
+        if (!video.videoWidth || !video.videoHeight) {
+            statusMsg.innerHTML = `<span style="color: var(--danger)">Camera is not ready yet. Please wait a moment and try again.</span>`;
+            return;
+        }
+
+        captureBtn.disabled = true;
+        captureBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Processing...';
+
+        // Draw video frame to canvas
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
+        
+        // Convert to base64 JPEG
+        const imageData = canvas.toDataURL('image/jpeg', 0.92);
+
+        // Send to backend
+        fetch('/api/register', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                user_id: userId,
+                name: userName,
+                department: userDept,
+                image: imageData
+            })
+        })
+        .then(res => res.json().then(data => ({status: res.status, body: data})))
+        .then(res => {
+            if(res.status === 200) {
+                statusMsg.innerHTML = `<span style="color: var(--success)"><i class="fa-solid fa-circle-check"></i> ${res.body.message}</span>`;
+                document.getElementById('userId').value = '';
+                document.getElementById('userName').value = '';
+                document.getElementById('userDept').value = '';
+            } else {
+                statusMsg.innerHTML = `<span style="color: var(--danger)"><i class="fa-solid fa-circle-xmark"></i> ${res.body.error}</span>`;
+            }
+        })
+        .catch(err => {
+            statusMsg.innerHTML = `<span style="color: var(--danger)">Server error. Please try again.</span>`;
+        })
+        .finally(() => {
+            captureBtn.disabled = false;
+            captureBtn.innerHTML = '<i class="fa-solid fa-camera"></i> Capture & Register';
+        });
+    });
+
+    // Cleanup when leaving page
+    window.addEventListener('beforeunload', () => {
+        const stream = video.srcObject;
+        if (stream) {
+            stream.getTracks().forEach(track => track.stop());
+        }
+    });
+</script>
+{% endblock %}

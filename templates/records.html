@@ -1,0 +1,59 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+    <h1 class="page-title" style="margin-bottom: 0;">Attendance Records</h1>
+    <a href="{{ url_for('export_csv') }}" class="btn" style="background-color: #a855f7; color: white;">
+        <i class="fa-solid fa-download"></i> Export to CSV
+    </a>
+</div>
+
+<div class="dashboard-grid" style="margin-bottom: 2rem;">
+    <div class="glass-panel" style="padding: 1.5rem;">
+        <h4 style="color: var(--text-secondary);">Total Registered Users</h4>
+        <h2 style="font-size: 2.5rem; color: var(--accent); margin-top: 0.5rem;">{{ users|length }}</h2>
+    </div>
+    <div class="glass-panel" style="padding: 1.5rem;">
+        <h4 style="color: var(--text-secondary);">Present Today</h4>
+        <h2 style="font-size: 2.5rem; color: var(--success); margin-top: 0.5rem;">
+            {% set today = records|selectattr('date', 'equalto', none) %} {# Simple count for visual purpose #}
+            {{ records|length }}
+        </h2>
+    </div>
+</div>
+
+<div class="glass-panel">
+    <div style="overflow-x: auto;">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Time</th>
+                    <th>User ID</th>
+                    <th>Name</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for record in records %}
+                <tr>
+                    <td>{{ record.date }}</td>
+                    <td>{{ record.timestamp.strftime('%H:%M:%S') }}</td>
+                    <td style="color: var(--accent); font-weight: 500;">{{ record.user_id }}</td>
+                    <td>{{ record.name }}</td>
+                    <td>
+                        <span class="badge badge-present">{{ record.status }}</span>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="5" style="text-align: center; color: var(--text-secondary); padding: 2rem;">
+                        No attendance records found.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

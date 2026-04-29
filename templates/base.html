@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Attendance System</title>
+    <!-- Modern Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Main StyleSheet -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    
+    <nav class="sidebar">
+        <div class="sidebar-header">
+            <h2><i class="fa-solid fa-face-viewfinder"></i> SmartTrack</h2>
+        </div>
+        <ul class="nav-links">
+            <li><a href="{{ url_for('index') }}" class="{% if request.path == '/' %}active{% endif %}"><i class="fa-solid fa-house"></i> Dashboard</a></li>
+            <li><a href="{{ url_for('register_page') }}" class="{% if request.path == '/register' %}active{% endif %}"><i class="fa-solid fa-user-plus"></i> Register</a></li>
+            <li><a href="{{ url_for('attendance_page') }}" class="{% if request.path == '/attendance' %}active{% endif %}"><i class="fa-solid fa-camera"></i> Attendance</a></li>
+            <li><a href="{{ url_for('records_page') }}" class="{% if request.path == '/records' %}active{% endif %}"><i class="fa-solid fa-table-list"></i> Records</a></li>
+            <li><a href="{{ url_for('users_page') }}" class="{% if request.path == '/users' %}active{% endif %}"><i class="fa-solid fa-users"></i> Users</a></li>
+        </ul>
+    </nav>
+
+    <main class="main-content">
+        <header class="topbar">
+            <div class="user-info">
+                <span>AI Powered Attendance System</span>
+            </div>
+        </header>
+        
+        <div class="content-wrapper">
+            {% block content %}{% endblock %}
+        </div>
+    </main>
+
+    {% block scripts %}{% endblock %}
+</body>
+</html>

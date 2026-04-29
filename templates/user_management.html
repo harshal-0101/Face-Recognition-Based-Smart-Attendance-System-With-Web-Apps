@@ -1,0 +1,203 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<h1 class="page-title">User Management</h1>
+
+<div class="glass-panel" style="margin-bottom: 1.5rem; display: flex; justify-content: space-between; align-items: center; gap: 1rem; flex-wrap: wrap;">
+    <div>
+        <h3 style="margin-bottom: 0.5rem;">Manage registered users</h3>
+        <p style="color: var(--text-secondary); margin: 0;">Edit a user's details or remove a profile from the attendance system.</p>
+    </div>
+    <button id="refreshBtn" class="btn btn-secondary">Refresh list</button>
+</div>
+
+<div class="glass-panel" style="overflow-x: auto;">
+    <table class="data-table" id="usersTable">
+        <thead>
+            <tr>
+                <th>User ID</th>
+                <th>Name</th>
+                <th>Department</th>
+                <th>Registered At</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody></tbody>
+    </table>
+</div>
+
+<div id="editPanel" class="glass-panel" style="margin-top: 2rem; display: none;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+        <div>
+            <h3>Edit User</h3>
+            <p style="color: var(--text-secondary); margin: 0;">Update user details and optionally refresh the face data.</p>
+        </div>
+        <button id="cancelEdit" class="btn btn-secondary">Cancel</button>
+    </div>
+
+    <div class="form-group">
+        <label>User ID</label>
+        <input type="text" id="editUserId" class="form-control" readonly>
+    </div>
+    <div class="form-group">
+        <label>Name</label>
+        <input type="text" id="editName" class="form-control">
+    </div>
+    <div class="form-group">
+        <label>Department</label>
+        <input type="text" id="editDepartment" class="form-control">
+    </div>
+    <div style="margin-top: 1rem; display: flex; flex-wrap: wrap; gap: 1rem; align-items: flex-start;">
+        <div style="flex: 1; min-width: 280px;">
+            <label>Optional new face image</label>
+            <div class="camera-container" style="position: relative; min-height: 220px; background: #0f172a; border-radius: 8px; overflow: hidden;">
+                <video id="updateWebcam" autoplay playsinline style="width:100%; height:100%; object-fit:cover;"></video>
+                <canvas id="updateCanvas" style="display:none;"></canvas>
+            </div>
+            <button id="captureUpdateBtn" class="btn btn-primary" style="margin-top: 0.75rem; width:100%;">Capture Updated Face</button>
+            <div id="updateStatus" style="margin-top: 0.75rem; font-weight: 500;"></div>
+        </div>
+        <div style="flex: 1; min-width: 260px; display: flex; flex-direction: column; gap: 0.75rem;">
+            <button id="saveUserBtn" class="btn btn-success" style="width:100%;">Save Changes</button>
+            <button id="deleteUserBtn" class="btn btn-danger" style="width:100%;">Delete User</button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    const refreshBtn = document.getElementById('refreshBtn');
+    const usersTableBody = document.querySelector('#usersTable tbody');
+    const editPanel = document.getElementById('editPanel');
+    const cancelEdit = document.getElementById('cancelEdit');
+    const editUserId = document.getElementById('editUserId');
+    const editName = document.getElementById('editName');
+    const editDepartment = document.getElementById('editDepartment');
+    const saveUserBtn = document.getElementById('saveUserBtn');
+    const deleteUserBtn = document.getElementById('deleteUserBtn');
+    const captureUpdateBtn = document.getElementById('captureUpdateBtn');
+    const updateStatus = document.getElementById('updateStatus');
+    const updateWebcam = document.getElementById('updateWebcam');
+    const updateCanvas = document.getElementById('updateCanvas');
+
+    let currentUser = null;
+    let capturedImageData = null;
+
+    async function loadUsers() {
+        const res = await fetch('/api/users');
+        const users = await res.json();
+        renderUsers(users);
+    }
+
+    function renderUsers(users) {
+        usersTableBody.innerHTML = '';
+        if (!users.length) {
+            usersTableBody.innerHTML = '<tr><td colspan="5" style="text-align:center; color: var(--text-secondary); padding: 1rem;">No users registered yet.</td></tr>';
+            return;
+        }
+
+        users.forEach(user => {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>${user.user_id}</td>
+                <td>${user.name}</td>
+                <td>${user.department}</td>
+                <td>${user.registered_at ? new Date(user.registered_at).toLocaleString() : 'N/A'}</td>
+                <td style="white-space: nowrap;">
+                    <button class="btn btn-secondary btn-small" data-user-id="${user.user_id}">Edit</button>
+                </td>
+            `;
+            row.querySelector('button').addEventListener('click', () => openEditPanel(user));
+            usersTableBody.appendChild(row);
+        });
+    }
+
+    function openEditPanel(user) {
+        currentUser = user;
+        capturedImageData = null;
+        updateStatus.textContent = '';
+        editUserId.value = user.user_id;
+        editName.value = user.name;
+        editDepartment.value = user.department;
+        editPanel.style.display = 'block';
+    }
+
+    function closeEditPanel() {
+        editPanel.style.display = 'none';
+        currentUser = null;
+        capturedImageData = null;
+        updateStatus.textContent = '';
+    }
+
+    cancelEdit.addEventListener('click', () => closeEditPanel());
+    refreshBtn.addEventListener('click', () => loadUsers());
+
+    saveUserBtn.addEventListener('click', async () => {
+        if (!currentUser) return;
+        const payload = {
+            name: editName.value.trim(),
+            department: editDepartment.value.trim()
+        };
+        if (capturedImageData) payload.image = capturedImageData;
+
+        const res = await fetch(`/api/user/${encodeURIComponent(currentUser.user_id)}`, {
+            method: 'PUT',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if (res.ok) {
+            updateStatus.innerHTML = `<span style="color: var(--success);">${data.message}</span>`;
+            loadUsers();
+        } else {
+            updateStatus.innerHTML = `<span style="color: var(--danger);">${data.error || 'Update failed.'}</span>`;
+        }
+    });
+
+    deleteUserBtn.addEventListener('click', async () => {
+        if (!currentUser) return;
+        const confirmed = confirm(`Delete user ${currentUser.user_id}? This cannot be undone.`);
+        if (!confirmed) return;
+
+        const res = await fetch(`/api/user/${encodeURIComponent(currentUser.user_id)}`, {
+            method: 'DELETE'
+        });
+        const data = await res.json();
+        if (res.ok) {
+            closeEditPanel();
+            loadUsers();
+            alert(data.message);
+        } else {
+            alert(data.error || 'Delete failed.');
+        }
+    });
+
+    captureUpdateBtn.addEventListener('click', async () => {
+        if (!updateWebcam.videoWidth || !updateWebcam.videoHeight) {
+            updateStatus.innerHTML = `<span style="color: var(--danger);">Camera is not ready yet.</span>`;
+            return;
+        }
+        updateCanvas.width = updateWebcam.videoWidth;
+        updateCanvas.height = updateWebcam.videoHeight;
+        updateCanvas.getContext('2d').drawImage(updateWebcam, 0, 0, updateCanvas.width, updateCanvas.height);
+        capturedImageData = updateCanvas.toDataURL('image/jpeg', 0.92);
+        updateStatus.innerHTML = `<span style="color: var(--success);">New face image captured and ready to save.</span>`;
+    });
+
+    async function initializeCamera() {
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+            updateWebcam.srcObject = stream;
+        } catch (err) {
+            console.warn('Could not access webcam for updates:', err);
+            updateStatus.innerHTML = `<span style="color: var(--danger);">Camera unavailable for face capture.</span>`;
+        }
+    }
+
+    window.addEventListener('load', () => {
+        loadUsers();
+        initializeCamera();
+    });
+</script>
+{% endblock %}

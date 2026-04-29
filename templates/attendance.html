@@ -1,0 +1,44 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+    <h1 class="page-title" style="margin-bottom: 0;">Live Tracker</h1>
+    <button id="stopBtn" class="btn btn-danger"><i class="fa-solid fa-power-off"></i> Stop Camera</button>
+</div>
+
+<div class="glass-panel" style="max-width: 900px; margin: 0 auto; text-align: center;">
+    
+    <div class="camera-container" style="max-width: 800px;">
+        <img id="videoFeed" src="{{ url_for('video_feed') }}" alt="Live Feed">
+    </div>
+    
+    <div style="margin-top: 2rem;">
+        <h3 id="statusText" style="color: var(--success);"><i class="fa-solid fa-record-vinyl fa-beat"></i> Camera Active & Listening</h3>
+        <p style="color: var(--text-secondary); margin-top: 10px;">Look directly at the camera. The system will announce your name when attendance is marked.</p>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    const stopBtn = document.getElementById('stopBtn');
+    const videoFeed = document.getElementById('videoFeed');
+    const statusText = document.getElementById('statusText');
+
+    stopBtn.addEventListener('click', () => {
+        fetch('/stop_video')
+            .then(res => res.json())
+            .then(data => {
+                videoFeed.src = "";
+                videoFeed.alt = "Camera Stopped";
+                statusText.innerHTML = '<span style="color: var(--danger)"><i class="fa-solid fa-camera-slash"></i> Camera Stopped</span>';
+                stopBtn.disabled = true;
+            });
+    });
+
+    // Cleanup when leaving page so camera resource is freed
+    window.addEventListener('beforeunload', () => {
+        fetch('/stop_video');
+    });
+</script>
+{% endblock %}

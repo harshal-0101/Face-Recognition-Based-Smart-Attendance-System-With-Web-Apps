@@ -1,0 +1,18 @@
+# Virtual environments
+venv/
+face_env/
+env/
+.venv/
+
+# Python cache
+__pycache__/
+*.pyc
+
+# Secrets
+.env
+
+# VS Code
+.vscode/
+
+# Build files
+*.whl
